@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="NationalTeamManager.Api/NationalTeamManager.Api.csproj" />
+  <Project Path="nationalteammanager.client/NationalTeamManager.Client.esproj">
+    <Build />
+    <Deploy />
+  </Project>
+</Solution>
