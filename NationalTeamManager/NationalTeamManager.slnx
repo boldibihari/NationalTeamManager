@@ -1,7 +1,23 @@
 <Solution>
   <Project Path="NationalTeamManager.Api/NationalTeamManager.Api.csproj" />
+  <Project
+    Path="NationalTeamManager.Application/NationalTeamManager.Application.csproj"
+    Id="25bc5f00-9412-4b02-ae3a-4f8ab482aaf5"
+  />
   <Project Path="nationalteammanager.client/NationalTeamManager.Client.esproj">
     <Build />
     <Deploy />
   </Project>
+  <Project
+    Path="NationalTeamManager.DataImporter/NationalTeamManager.DataImporter.csproj"
+    Id="7772eb54-326f-483a-a2d5-31af8561fca4"
+  />
+  <Project
+    Path="NationalTeamManager.Domain/NationalTeamManager.Domain.csproj"
+    Id="bacf9390-1ad7-4d8a-ad1d-f418ee55aab2"
+  />
+  <Project
+    Path="NationalTeamManager.Infrastructure/NationalTeamManager.Infrastructure.csproj"
+    Id="31fc96f9-810f-43f5-99e4-1aaec823dcda"
+  />
 </Solution>
