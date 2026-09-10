@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using NationalTeamManager.DataImporter.Models;
 using NationalTeamManager.DataImporter.Providers.SofaScore;
 using NationalTeamManager.DataImporter.Providers.SofaScore.Models;
 using NationalTeamManager.Domain.Entities;
@@ -116,66 +117,202 @@ namespace NationalTeamManager.DataImporter.Importers
                 StringComparer.Ordinal
             );
 
+            var matchStatistics = new ImportStatistics();
+            var teamStatistics = new ImportStatistics();
+            var competitionStatistics = new ImportStatistics();
+            var editionStatistics = new ImportStatistics();
+            var stageStatistics = new ImportStatistics();
+
+            var countedTeamExternalIds = new HashSet<string>(StringComparer.Ordinal);
+
+            var countedCompetitionExternalIds = new HashSet<string>(StringComparer.Ordinal);
+
+            var countedEditionExternalIds = new HashSet<string>(StringComparer.Ordinal);
+
+            var countedStageExternalIds = new HashSet<string>(StringComparer.Ordinal);
+
             foreach (var source in matches)
             {
-                ImportMatch(
+                var result = ImportMatch(
                     source,
                     teamsByExternalId,
                     competitionsByExternalId,
                     editionsByExternalId,
                     stagesByExternalId,
-                    matchesByExternalId
+                    matchesByExternalId,
+                    teamStatistics,
+                    competitionStatistics,
+                    editionStatistics,
+                    stageStatistics,
+                    countedTeamExternalIds,
+                    countedCompetitionExternalIds,
+                    countedEditionExternalIds,
+                    countedStageExternalIds
                 );
+
+                matchStatistics.Add(result);
             }
 
             await dbContext.SaveChangesAsync(cancellationToken);
 
-            Console.WriteLine($"Meccsimport kész: {matches.Count} mérkőzés feldolgozva.");
+            Console.WriteLine(
+                $"""
+                Meccsimport kész:
+
+                  Mérkőzések:
+                    Összesen: {matches.Count}
+                    Új: {matchStatistics.Created}
+                    Frissített: {matchStatistics.Updated}
+                    Változatlan: {matchStatistics.Unchanged}
+
+                  Csapatok:
+                    Új: {teamStatistics.Created}
+                    Frissített: {teamStatistics.Updated}
+                    Változatlan: {teamStatistics.Unchanged}
+
+                  Versenyek:
+                    Új: {competitionStatistics.Created}
+                    Frissített: {competitionStatistics.Updated}
+                    Változatlan: {competitionStatistics.Unchanged}
+
+                  Szezonok:
+                    Új: {editionStatistics.Created}
+                    Frissített: {editionStatistics.Updated}
+                    Változatlan: {editionStatistics.Unchanged}
+
+                  Szakaszok:
+                    Új: {stageStatistics.Created}
+                    Frissített: {stageStatistics.Updated}
+                    Változatlan: {stageStatistics.Unchanged}
+                """
+            );
         }
 
-        private void ImportMatch(
+        private ImportResult ImportMatch(
             SofaScoreEvent source,
             Dictionary<string, Team> teamsByExternalId,
             Dictionary<string, Competition> competitionsByExternalId,
             Dictionary<string, CompetitionEdition> editionsByExternalId,
             Dictionary<string, CompetitionStage> stagesByExternalId,
-            Dictionary<string, Match> matchesByExternalId
+            Dictionary<string, Match> matchesByExternalId,
+            ImportStatistics teamStatistics,
+            ImportStatistics competitionStatistics,
+            ImportStatistics editionStatistics,
+            ImportStatistics stageStatistics,
+            HashSet<string> countedTeamExternalIds,
+            HashSet<string> countedCompetitionExternalIds,
+            HashSet<string> countedEditionExternalIds,
+            HashSet<string> countedStageExternalIds
         )
         {
-            var homeTeam = GetOrCreateTeam(source.HomeTeam, teamsByExternalId);
+            var (homeTeam, homeTeamResult) = GetOrCreateTeam(source.HomeTeam, teamsByExternalId);
 
-            var awayTeam = GetOrCreateTeam(source.AwayTeam, teamsByExternalId);
+            if (countedTeamExternalIds.Add(source.HomeTeam.Id.ToString()))
+            {
+                teamStatistics.Add(homeTeamResult);
+            }
 
-            var competition = GetOrCreateCompetition(source, competitionsByExternalId);
+            var (awayTeam, awayTeamResult) = GetOrCreateTeam(source.AwayTeam, teamsByExternalId);
 
-            var edition = GetOrCreateCompetitionEdition(source, competition, editionsByExternalId);
+            if (countedTeamExternalIds.Add(source.AwayTeam.Id.ToString()))
+            {
+                teamStatistics.Add(awayTeamResult);
+            }
 
-            var stage = GetOrCreateCompetitionStage(source, edition, stagesByExternalId);
+            var (competition, competitionResult) = GetOrCreateCompetition(
+                source,
+                competitionsByExternalId
+            );
+
+            if (
+                source.Tournament?.UniqueTournament is not null
+                && countedCompetitionExternalIds.Add(
+                    source.Tournament.UniqueTournament.Id.ToString()
+                )
+            )
+            {
+                competitionStatistics.Add(competitionResult);
+            }
+
+            var (edition, editionResult) = GetOrCreateCompetitionEdition(
+                source,
+                competition,
+                editionsByExternalId
+            );
+
+            if (
+                source.Season is not null
+                && countedEditionExternalIds.Add(source.Season.Id.ToString())
+            )
+            {
+                editionStatistics.Add(editionResult);
+            }
+
+            var (stage, stageResult) = GetOrCreateCompetitionStage(
+                source,
+                edition,
+                stagesByExternalId
+            );
+
+            if (
+                source.Season is not null
+                && source.RoundInfo?.Round is not null
+                && countedStageExternalIds.Add($"{source.Season.Id}_round_{source.RoundInfo.Round}")
+            )
+            {
+                stageStatistics.Add(stageResult!.Value);
+            }
+
+            var date = DateTimeOffset.FromUnixTimeSeconds(source.StartTimestamp).UtcDateTime;
+
+            var homeScore = source.HomeScore?.Current;
+            var awayScore = source.AwayScore?.Current;
 
             var externalId = source.Id.ToString();
 
             if (!matchesByExternalId.TryGetValue(externalId, out var match))
             {
-                match = new Match { ExternalId = externalId, DataSource = DataSource };
+                match = new Match
+                {
+                    ExternalId = externalId,
+                    DataSource = DataSource,
+                    Date = date,
+                    HomeTeam = homeTeam,
+                    AwayTeam = awayTeam,
+                    HomeScore = homeScore,
+                    AwayScore = awayScore,
+                    CompetitionEdition = edition,
+                    CompetitionStage = stage,
+                };
 
                 dbContext.Matches.Add(match);
 
                 matchesByExternalId.Add(externalId, match);
+
+                return ImportResult.Created;
             }
 
-            match.Date = DateTimeOffset.FromUnixTimeSeconds(source.StartTimestamp).UtcDateTime;
+            var hasChanges =
+                match.Date != date
+                || match.HomeTeamId != homeTeam.Id
+                || match.AwayTeamId != awayTeam.Id
+                || match.HomeScore != homeScore
+                || match.AwayScore != awayScore
+                || match.CompetitionEditionId != edition.Id
+                || match.CompetitionStageId != stage?.Id;
 
+            match.Date = date;
             match.HomeTeam = homeTeam;
             match.AwayTeam = awayTeam;
-
-            match.HomeScore = source.HomeScore?.Current;
-            match.AwayScore = source.AwayScore?.Current;
-
+            match.HomeScore = homeScore;
+            match.AwayScore = awayScore;
             match.CompetitionEdition = edition;
             match.CompetitionStage = stage;
+
+            return hasChanges ? ImportResult.Updated : ImportResult.Unchanged;
         }
 
-        private Team GetOrCreateTeam(
+        private (Team Entity, ImportResult Result) GetOrCreateTeam(
             SofaScoreMatchTeam source,
             Dictionary<string, Team> teamsByExternalId
         )
@@ -184,11 +321,16 @@ namespace NationalTeamManager.DataImporter.Importers
 
             if (teamsByExternalId.TryGetValue(externalId, out var team))
             {
+                var hasChanges =
+                    team.Name != source.Name
+                    || team.Country != source.Country?.Name
+                    || team.IsNationalTeam != source.National;
+
                 team.Name = source.Name;
                 team.Country = source.Country?.Name;
                 team.IsNationalTeam = source.National;
 
-                return team;
+                return (team, hasChanges ? ImportResult.Updated : ImportResult.Unchanged);
             }
 
             team = new Team
@@ -204,33 +346,37 @@ namespace NationalTeamManager.DataImporter.Importers
 
             teamsByExternalId.Add(externalId, team);
 
-            return team;
+            return (team, ImportResult.Created);
         }
 
-        private Competition GetOrCreateCompetition(
+        private (Competition Entity, ImportResult Result) GetOrCreateCompetition(
             SofaScoreEvent source,
             Dictionary<string, Competition> competitionsByExternalId
         )
         {
-            if (source.Tournament?.UniqueTournament is null)
+            var uniqueTournament = source.Tournament?.UniqueTournament;
+
+            if (uniqueTournament is null)
             {
                 throw new InvalidOperationException(
-                    $"A mérkőzéshez nem tartozik egyedi versenysorozat: {source.Id}"
+                    $"A mérkőzéshez nem tartozik torna: {source.Id}"
                 );
             }
 
-            var tournament = source.Tournament.UniqueTournament;
-            var externalId = tournament.Id.ToString();
+            var externalId = uniqueTournament.Id.ToString();
 
             if (competitionsByExternalId.TryGetValue(externalId, out var competition))
             {
-                competition.Name = tournament.Name;
-                return competition;
+                var hasChanges = competition.Name != uniqueTournament.Name;
+
+                competition.Name = uniqueTournament.Name;
+
+                return (competition, hasChanges ? ImportResult.Updated : ImportResult.Unchanged);
             }
 
             competition = new Competition
             {
-                Name = tournament.Name,
+                Name = uniqueTournament.Name,
                 ExternalId = externalId,
                 DataSource = DataSource,
             };
@@ -239,10 +385,10 @@ namespace NationalTeamManager.DataImporter.Importers
 
             competitionsByExternalId.Add(externalId, competition);
 
-            return competition;
+            return (competition, ImportResult.Created);
         }
 
-        private CompetitionEdition GetOrCreateCompetitionEdition(
+        private (CompetitionEdition Entity, ImportResult Result) GetOrCreateCompetitionEdition(
             SofaScoreEvent source,
             Competition competition,
             Dictionary<string, CompetitionEdition> editionsByExternalId
@@ -259,10 +405,16 @@ namespace NationalTeamManager.DataImporter.Importers
 
             if (editionsByExternalId.TryGetValue(externalId, out var edition))
             {
+                var hasChanges =
+                    edition.Name != source.Season.Name
+                    || edition.Year != source.Season.Year
+                    || edition.CompetitionId != competition.Id;
+
                 edition.Name = source.Season.Name;
                 edition.Year = source.Season.Year;
+                edition.Competition = competition;
 
-                return edition;
+                return (edition, hasChanges ? ImportResult.Updated : ImportResult.Unchanged);
             }
 
             edition = new CompetitionEdition
@@ -278,10 +430,10 @@ namespace NationalTeamManager.DataImporter.Importers
 
             editionsByExternalId.Add(externalId, edition);
 
-            return edition;
+            return (edition, ImportResult.Created);
         }
 
-        private CompetitionStage? GetOrCreateCompetitionStage(
+        private (CompetitionStage? Entity, ImportResult? Result) GetOrCreateCompetitionStage(
             SofaScoreEvent source,
             CompetitionEdition edition,
             Dictionary<string, CompetitionStage> stagesByExternalId
@@ -289,23 +441,26 @@ namespace NationalTeamManager.DataImporter.Importers
         {
             if (source.RoundInfo?.Round is null)
             {
-                return null;
+                return (null, null);
             }
 
-            var round = source.RoundInfo.Round.Value;
+            var externalId = $"{source.Season!.Id}_round_{source.RoundInfo.Round}";
 
-            var externalId = $"{source.Season?.Id}_round_{round}";
+            var name = $"Round {source.RoundInfo.Round}";
 
             if (stagesByExternalId.TryGetValue(externalId, out var stage))
             {
-                stage.Name = $"Round {round}";
+                var hasChanges = stage.Name != name || stage.CompetitionEditionId != edition.Id;
 
-                return stage;
+                stage.Name = name;
+                stage.CompetitionEdition = edition;
+
+                return (stage, hasChanges ? ImportResult.Updated : ImportResult.Unchanged);
             }
 
             stage = new CompetitionStage
             {
-                Name = $"Round {round}",
+                Name = name,
                 CompetitionEdition = edition,
                 ExternalId = externalId,
                 DataSource = DataSource,
@@ -315,7 +470,7 @@ namespace NationalTeamManager.DataImporter.Importers
 
             stagesByExternalId.Add(externalId, stage);
 
-            return stage;
+            return (stage, ImportResult.Created);
         }
     }
 }

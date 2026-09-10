@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using NationalTeamManager.DataImporter.Models;
 using NationalTeamManager.DataImporter.Providers.SofaScore;
 using NationalTeamManager.DataImporter.Providers.SofaScore.Models;
 using NationalTeamManager.Domain.Entities;
@@ -70,28 +71,62 @@ namespace NationalTeamManager.DataImporter.Importers
 
             var marketValuesByPlayerId = existingMarketValues.ToDictionary(x => x.PlayerId);
 
+            var playerStatistics = new ImportStatistics();
+            var teamStatistics = new ImportStatistics();
+            var marketValueStatistics = new ImportStatistics();
+
+            var countedTeamExternalIds = new HashSet<string>(StringComparer.Ordinal);
+
             foreach (var source in players)
             {
-                ImportPlayer(
+                var result = ImportPlayer(
                     source,
                     playersByExternalId,
                     teamsByExternalId,
                     marketValuesByPlayerId,
-                    recordedAt
+                    recordedAt,
+                    teamStatistics,
+                    marketValueStatistics,
+                    countedTeamExternalIds
                 );
+
+                playerStatistics.Add(result);
             }
 
             await dbContext.SaveChangesAsync(cancellationToken);
 
-            Console.WriteLine($"Import kész: {players.Count} játékos feldolgozva.");
+            Console.WriteLine(
+                $"""
+                Játékosimport kész:
+
+                  Játékosok:
+                    Összesen: {players.Count}
+                    Új: {playerStatistics.Created}
+                    Frissített: {playerStatistics.Updated}
+                    Változatlan: {playerStatistics.Unchanged}
+
+                  Csapatok:
+                    Új: {teamStatistics.Created}
+                    Frissített: {teamStatistics.Updated}
+                    Változatlan: {teamStatistics.Unchanged}
+
+                  Piaci értékek:
+                    Új: {marketValueStatistics.Created}
+                    Frissített: {marketValueStatistics.Updated}
+                    Változatlan: {marketValueStatistics.Unchanged}
+                """
+            );
         }
 
-        private void ImportPlayer(
+        private ImportResult ImportPlayer(
             SofaScorePlayer source,
             Dictionary<string, Player> playersByExternalId,
             Dictionary<string, Team> teamsByExternalId,
             Dictionary<int, PlayerMarketValue> marketValuesByPlayerId,
-            DateTime recordedAt
+            DateTime recordedAt,
+            ImportStatistics teamStatistics,
+            ImportStatistics marketValueStatistics,
+            HashSet<string> countedTeamExternalIds
         )
         {
             if (string.IsNullOrWhiteSpace(source.SofaScoreId))
@@ -108,31 +143,83 @@ namespace NationalTeamManager.DataImporter.Importers
                 );
             }
 
-            var team = GetOrCreateTeam(source, teamsByExternalId);
+            var (team, teamResult) = GetOrCreateTeam(source, teamsByExternalId);
+
+            var teamExternalId = source.Team.Id.ToString();
+
+            if (countedTeamExternalIds.Add(teamExternalId))
+            {
+                teamStatistics.Add(teamResult);
+            }
+
+            var position = MapPosition(source.Position);
+            var preferredFoot = MapPreferredFoot(source.PreferredFoot);
+
+            DateOnly? dateOfBirth = source.DateOfBirth.HasValue
+                ? DateOnly.FromDateTime(source.DateOfBirth.Value.DateTime)
+                : null;
 
             if (!playersByExternalId.TryGetValue(source.SofaScoreId, out var player))
             {
-                player = new Player { ExternalId = source.SofaScoreId, DataSource = DataSource };
+                player = new Player
+                {
+                    ExternalId = source.SofaScoreId,
+                    DataSource = DataSource,
+                    Name = source.Name,
+                    Position = position,
+                    Height = source.Height,
+                    DateOfBirth = dateOfBirth,
+                    PreferredFoot = preferredFoot,
+                    Nationality = source.Country?.Name,
+                    Team = team,
+                };
 
                 dbContext.Players.Add(player);
 
                 playersByExternalId.Add(source.SofaScoreId, player);
+
+                var marketValueResult = UpsertMarketValue(
+                    player,
+                    source,
+                    marketValuesByPlayerId,
+                    recordedAt
+                );
+
+                marketValueStatistics.Add(marketValueResult);
+
+                return ImportResult.Created;
             }
 
+            var hasChanges =
+                player.Name != source.Name
+                || player.Position != position
+                || player.Height != source.Height
+                || player.DateOfBirth != dateOfBirth
+                || player.PreferredFoot != preferredFoot
+                || player.Nationality != source.Country?.Name
+                || player.TeamId != team.Id;
+
             player.Name = source.Name;
-            player.Position = MapPosition(source.Position);
+            player.Position = position;
             player.Height = source.Height;
-            player.DateOfBirth = source.DateOfBirth.HasValue
-                ? DateOnly.FromDateTime(source.DateOfBirth.Value.DateTime)
-                : null;
-            player.PreferredFoot = MapPreferredFoot(source.PreferredFoot);
+            player.DateOfBirth = dateOfBirth;
+            player.PreferredFoot = preferredFoot;
             player.Nationality = source.Country?.Name;
             player.Team = team;
 
-            UpsertMarketValue(player, source, marketValuesByPlayerId, recordedAt);
+            var marketValueResultForExistingPlayer = UpsertMarketValue(
+                player,
+                source,
+                marketValuesByPlayerId,
+                recordedAt
+            );
+
+            marketValueStatistics.Add(marketValueResultForExistingPlayer);
+
+            return hasChanges ? ImportResult.Updated : ImportResult.Unchanged;
         }
 
-        private Team GetOrCreateTeam(
+        private (Team Entity, ImportResult Result) GetOrCreateTeam(
             SofaScorePlayer source,
             Dictionary<string, Team> teamsByExternalId
         )
@@ -141,10 +228,16 @@ namespace NationalTeamManager.DataImporter.Importers
 
             if (teamsByExternalId.TryGetValue(externalId, out var team))
             {
+                var hasChanges =
+                    team.Name != source.Team.Name
+                    || team.Country != source.Team.Country?.Name
+                    || team.IsNationalTeam != (source.Team.Country is not null);
+
                 team.Name = source.Team.Name;
                 team.Country = source.Team.Country?.Name;
+                team.IsNationalTeam = source.Team.Country is not null;
 
-                return team;
+                return (team, hasChanges ? ImportResult.Updated : ImportResult.Unchanged);
             }
 
             team = new Team
@@ -160,10 +253,10 @@ namespace NationalTeamManager.DataImporter.Importers
 
             teamsByExternalId.Add(externalId, team);
 
-            return team;
+            return (team, ImportResult.Created);
         }
 
-        private void UpsertMarketValue(
+        private ImportResult UpsertMarketValue(
             Player player,
             SofaScorePlayer source,
             Dictionary<int, PlayerMarketValue> marketValuesByPlayerId,
@@ -172,30 +265,37 @@ namespace NationalTeamManager.DataImporter.Importers
         {
             if (source.ProposedMarketValueRaw?.Value is null)
             {
-                return;
+                return ImportResult.Unchanged;
             }
+
+            var value = source.ProposedMarketValueRaw.Value.Value;
+            var currency = source.ProposedMarketValueRaw.Currency ?? "EUR";
 
             if (
                 player.Id != 0
                 && marketValuesByPlayerId.TryGetValue(player.Id, out var existingMarketValue)
             )
             {
-                existingMarketValue.Value = source.ProposedMarketValueRaw.Value.Value;
+                var hasChanges =
+                    existingMarketValue.Value != value || existingMarketValue.Currency != currency;
 
-                existingMarketValue.Currency = source.ProposedMarketValueRaw.Currency ?? "EUR";
+                existingMarketValue.Value = value;
+                existingMarketValue.Currency = currency;
 
-                return;
+                return hasChanges ? ImportResult.Updated : ImportResult.Unchanged;
             }
 
             dbContext.PlayerMarketValues.Add(
                 new PlayerMarketValue
                 {
                     Player = player,
-                    Value = source.ProposedMarketValueRaw.Value.Value,
-                    Currency = source.ProposedMarketValueRaw.Currency ?? "EUR",
+                    Value = value,
+                    Currency = currency,
                     RecordedAt = recordedAt,
                 }
             );
+
+            return ImportResult.Created;
         }
 
         private static PlayerPosition MapPosition(string? position)
