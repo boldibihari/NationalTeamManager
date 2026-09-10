@@ -10,6 +10,9 @@ namespace NationalTeamManager.DataImporter.Providers.SofaScore.Models
         [JsonPropertyName("season")]
         public SofaScoreSeason? Season { get; set; }
 
+        [JsonPropertyName("roundInfo")]
+        public SofaScoreRoundInfo? RoundInfo { get; set; }
+
         [JsonPropertyName("status")]
         public SofaScoreEventStatus? Status { get; set; }
 
