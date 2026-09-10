@@ -1,7 +1,13 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Mapster;
+using MapsterMapper;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using NationalTeamManager.Application.Interfaces;
+using NationalTeamManager.Infrastructure.Mapping;
 using NationalTeamManager.Infrastructure.Persistence;
+using NationalTeamManager.Infrastructure.Persistence.Repositories;
+using NationalTeamManager.Infrastructure.Services.Entities;
 
 namespace NationalTeamManager.Infrastructure.DependencyInjection
 {
@@ -15,6 +21,15 @@ namespace NationalTeamManager.Infrastructure.DependencyInjection
             services.AddDbContext<NationalTeamManagerDbContext>(options =>
                 options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"))
             );
+
+            services.AddScoped(typeof(IEntityRepository<>), typeof(EntityRepository<>));
+
+            MapsterConfiguration.Register();
+
+            services.AddSingleton(TypeAdapterConfig.GlobalSettings);
+            services.AddScoped<IMapper, ServiceMapper>();
+
+            services.AddScoped<IPlayerService, PlayerService>();
 
             return services;
         }

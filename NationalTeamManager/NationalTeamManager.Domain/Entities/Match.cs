@@ -1,6 +1,8 @@
-﻿namespace NationalTeamManager.Domain.Entities
+﻿using NationalTeamManager.Domain.Interfaces;
+
+namespace NationalTeamManager.Domain.Entities
 {
-    public class Match
+    public class Match : IEntity
     {
         public int Id { get; set; }
         public DateTime Date { get; set; }

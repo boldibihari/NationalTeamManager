@@ -1,6 +1,8 @@
-﻿namespace NationalTeamManager.Domain.Entities
+﻿using NationalTeamManager.Domain.Interfaces;
+
+namespace NationalTeamManager.Domain.Entities
 {
-    public class PlayerMarketValue
+    public class PlayerMarketValue : IEntity
     {
         public int Id { get; set; }
         public int PlayerId { get; set; }

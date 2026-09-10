@@ -1,8 +1,9 @@
 ﻿using NationalTeamManager.Domain.Enums;
+using NationalTeamManager.Domain.Interfaces;
 
 namespace NationalTeamManager.Domain.Entities
 {
-    public class Player
+    public class Player : IEntity
     {
         public int Id { get; set; }
         public string Name { get; set; } = null!;

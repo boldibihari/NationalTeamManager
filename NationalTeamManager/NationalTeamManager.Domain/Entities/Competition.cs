@@ -1,6 +1,8 @@
-﻿namespace NationalTeamManager.Domain.Entities
+﻿using NationalTeamManager.Domain.Interfaces;
+
+namespace NationalTeamManager.Domain.Entities
 {
-    public class Competition
+    public class Competition : IEntity
     {
         public int Id { get; set; }
         public string Name { get; set; } = null!;
