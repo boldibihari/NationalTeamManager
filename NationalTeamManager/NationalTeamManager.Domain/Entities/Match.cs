@@ -4,13 +4,17 @@
     {
         public int Id { get; set; }
         public DateTime Date { get; set; }
-        public string Opponent { get; set; } = null!;
-        public bool IsHome { get; set; }
-        public int? HungaryScore { get; set; }
-        public int? OpponentScore { get; set; }
+        public int HomeTeamId { get; set; }
+        public Team HomeTeam { get; set; } = null!;
+        public int AwayTeamId { get; set; }
+        public Team AwayTeam { get; set; } = null!;
+        public int? HomeScore { get; set; }
+        public int? AwayScore { get; set; }
         public string? Venue { get; set; }
-        public int CompetitionId { get; set; }
-        public Competition Competition { get; set; } = null!;
+        public int CompetitionEditionId { get; set; }
+        public CompetitionEdition CompetitionEdition { get; set; } = null!;
+        public int? CompetitionStageId { get; set; }
+        public CompetitionStage? CompetitionStage { get; set; }
         public string? ExternalId { get; set; }
         public string? DataSource { get; set; }
     }

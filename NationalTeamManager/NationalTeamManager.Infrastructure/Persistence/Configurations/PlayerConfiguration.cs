@@ -23,9 +23,9 @@ namespace NationalTeamManager.Infrastructure.Persistence.Configurations
             builder.Property(x => x.DataSource).HasMaxLength(50);
 
             builder
-                .HasOne(x => x.Club)
+                .HasOne(x => x.Team)
                 .WithMany(x => x.Players)
-                .HasForeignKey(x => x.ClubId)
+                .HasForeignKey(x => x.TeamId)
                 .OnDelete(DeleteBehavior.SetNull);
 
             builder.HasIndex(x => new { x.ExternalId, x.DataSource }).IsUnique();

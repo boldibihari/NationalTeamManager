@@ -26,5 +26,49 @@ namespace NationalTeamManager.DataImporter.Providers.SofaScore
             return squad
                 ?? throw new InvalidOperationException("A SofaScore API üres választ adott.");
         }
+
+        public async Task<SofaScoreMatchResponse> GetLastMatchesAsync(
+            int teamId,
+            CancellationToken cancellationToken = default
+        )
+        {
+            var client = httpClientFactory.CreateClient("SofaScore");
+
+            var response = await client.GetAsync(
+                $"teams/get-last-matches?teamId={teamId}",
+                cancellationToken
+            );
+
+            response.EnsureSuccessStatusCode();
+
+            var matches = await response.Content.ReadFromJsonAsync<SofaScoreMatchResponse>(
+                cancellationToken
+            );
+
+            return matches
+                ?? throw new InvalidOperationException("A SofaScore API üres választ adott.");
+        }
+
+        public async Task<SofaScoreMatchResponse> GetNextMatchesAsync(
+            int teamId,
+            CancellationToken cancellationToken = default
+        )
+        {
+            var client = httpClientFactory.CreateClient("SofaScore");
+
+            var response = await client.GetAsync(
+                $"teams/get-next-matches?teamId={teamId}",
+                cancellationToken
+            );
+
+            response.EnsureSuccessStatusCode();
+
+            var matches = await response.Content.ReadFromJsonAsync<SofaScoreMatchResponse>(
+                cancellationToken
+            );
+
+            return matches
+                ?? throw new InvalidOperationException("A SofaScore API üres választ adott.");
+        }
     }
 }

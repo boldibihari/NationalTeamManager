@@ -1,12 +1,13 @@
 ﻿namespace NationalTeamManager.Domain.Entities
 {
-    public class Club
+    public class CompetitionStage
     {
         public int Id { get; set; }
         public string Name { get; set; } = null!;
-        public string? Country { get; set; }
+        public int CompetitionEditionId { get; set; }
+        public CompetitionEdition CompetitionEdition { get; set; } = null!;
         public string? ExternalId { get; set; }
         public string? DataSource { get; set; }
-        public ICollection<Player> Players { get; set; } = [];
+        public ICollection<Match> Matches { get; set; } = [];
     }
 }

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NationalTeamManager.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using NationalTeamManager.Infrastructure.Persistence;
 namespace NationalTeamManager.Infrastructure.Migrations
 {
     [DbContext(typeof(NationalTeamManagerDbContext))]
-    partial class NationalTeamManagerDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260910143426_AddTeamsAndCompetitionStructure")]
+    partial class AddTeamsAndCompetitionStructure
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

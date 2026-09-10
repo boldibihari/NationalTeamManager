@@ -4,9 +4,9 @@ using NationalTeamManager.Domain.Entities;
 
 namespace NationalTeamManager.Infrastructure.Persistence.Configurations
 {
-    public class ClubConfiguration : IEntityTypeConfiguration<Club>
+    public class TeamConfiguration : IEntityTypeConfiguration<Team>
     {
-        public void Configure(EntityTypeBuilder<Club> builder)
+        public void Configure(EntityTypeBuilder<Team> builder)
         {
             builder.HasKey(x => x.Id);
 

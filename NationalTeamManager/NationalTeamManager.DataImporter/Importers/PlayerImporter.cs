@@ -26,7 +26,7 @@ namespace NationalTeamManager.DataImporter.Importers
                 .Distinct()
                 .ToList();
 
-            var clubExternalIds = players
+            var teamExternalIds = players
                 .Where(x => x.Team is not null)
                 .Select(x => x.Team!.Id.ToString())
                 .Distinct()
@@ -40,11 +40,11 @@ namespace NationalTeamManager.DataImporter.Importers
                 )
                 .ToListAsync(cancellationToken);
 
-            var existingClubs = await dbContext
-                .Clubs.Where(x =>
+            var existingTeams = await dbContext
+                .Teams.Where(x =>
                     x.DataSource == DataSource
                     && x.ExternalId != null
-                    && clubExternalIds.Contains(x.ExternalId)
+                    && teamExternalIds.Contains(x.ExternalId)
                 )
                 .ToListAsync(cancellationToken);
 
@@ -63,7 +63,7 @@ namespace NationalTeamManager.DataImporter.Importers
                 StringComparer.Ordinal
             );
 
-            var clubsByExternalId = existingClubs.ToDictionary(
+            var teamsByExternalId = existingTeams.ToDictionary(
                 x => x.ExternalId!,
                 StringComparer.Ordinal
             );
@@ -75,7 +75,7 @@ namespace NationalTeamManager.DataImporter.Importers
                 ImportPlayer(
                     source,
                     playersByExternalId,
-                    clubsByExternalId,
+                    teamsByExternalId,
                     marketValuesByPlayerId,
                     recordedAt
                 );
@@ -89,7 +89,7 @@ namespace NationalTeamManager.DataImporter.Importers
         private void ImportPlayer(
             SofaScorePlayer source,
             Dictionary<string, Player> playersByExternalId,
-            Dictionary<string, Club> clubsByExternalId,
+            Dictionary<string, Team> teamsByExternalId,
             Dictionary<int, PlayerMarketValue> marketValuesByPlayerId,
             DateTime recordedAt
         )
@@ -104,11 +104,11 @@ namespace NationalTeamManager.DataImporter.Importers
             if (source.Team is null)
             {
                 throw new InvalidOperationException(
-                    $"A játékoshoz nem tartozik klub: {source.Name}"
+                    $"A játékoshoz nem tartozik csapat: {source.Name}"
                 );
             }
 
-            var club = GetOrCreateClub(source, clubsByExternalId);
+            var team = GetOrCreateTeam(source, teamsByExternalId);
 
             if (!playersByExternalId.TryGetValue(source.SofaScoreId, out var player))
             {
@@ -127,39 +127,40 @@ namespace NationalTeamManager.DataImporter.Importers
                 : null;
             player.PreferredFoot = MapPreferredFoot(source.PreferredFoot);
             player.Nationality = source.Country?.Name;
-            player.Club = club;
+            player.Team = team;
 
             UpsertMarketValue(player, source, marketValuesByPlayerId, recordedAt);
         }
 
-        private Club GetOrCreateClub(
+        private Team GetOrCreateTeam(
             SofaScorePlayer source,
-            Dictionary<string, Club> clubsByExternalId
+            Dictionary<string, Team> teamsByExternalId
         )
         {
             var externalId = source.Team!.Id.ToString();
 
-            if (clubsByExternalId.TryGetValue(externalId, out var club))
+            if (teamsByExternalId.TryGetValue(externalId, out var team))
             {
-                club.Name = source.Team.Name;
-                club.Country = source.Team.Country?.Name;
+                team.Name = source.Team.Name;
+                team.Country = source.Team.Country?.Name;
 
-                return club;
+                return team;
             }
 
-            club = new Club
+            team = new Team
             {
                 Name = source.Team.Name,
                 Country = source.Team.Country?.Name,
+                IsNationalTeam = source.Team.Country is not null,
                 ExternalId = externalId,
                 DataSource = DataSource,
             };
 
-            dbContext.Clubs.Add(club);
+            dbContext.Teams.Add(team);
 
-            clubsByExternalId.Add(externalId, club);
+            teamsByExternalId.Add(externalId, team);
 
-            return club;
+            return team;
         }
 
         private void UpsertMarketValue(

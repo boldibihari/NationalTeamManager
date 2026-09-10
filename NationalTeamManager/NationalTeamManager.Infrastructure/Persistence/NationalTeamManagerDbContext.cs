@@ -9,9 +9,13 @@ namespace NationalTeamManager.Infrastructure.Persistence
     {
         public DbSet<Player> Players => Set<Player>();
 
-        public DbSet<Club> Clubs => Set<Club>();
+        public DbSet<Team> Teams => Set<Team>();
 
         public DbSet<Competition> Competitions => Set<Competition>();
+
+        public DbSet<CompetitionEdition> CompetitionEditions => Set<CompetitionEdition>();
+
+        public DbSet<CompetitionStage> CompetitionStages => Set<CompetitionStage>();
 
         public DbSet<Match> Matches => Set<Match>();
 
