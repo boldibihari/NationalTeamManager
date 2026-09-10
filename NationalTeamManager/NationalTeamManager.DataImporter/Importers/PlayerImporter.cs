@@ -12,70 +12,95 @@ namespace NationalTeamManager.DataImporter.Importers
         NationalTeamManagerDbContext dbContext
     )
     {
+        private const string DataSource = "SofaScore";
+
         public async Task ImportAsync(int teamId, CancellationToken cancellationToken = default)
         {
             var squad = await sofaScoreClient.GetSquadAsync(teamId, cancellationToken);
 
-            foreach (var item in squad.Players)
+            var players = squad.Players.Select(x => x.Player).ToList();
+
+            var playerExternalIds = players
+                .Select(x => x.SofaScoreId)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct()
+                .ToList();
+
+            var clubExternalIds = players
+                .Where(x => x.Team is not null)
+                .Select(x => x.Team!.Id.ToString())
+                .Distinct()
+                .ToList();
+
+            var existingPlayers = await dbContext
+                .Players.Where(x =>
+                    x.DataSource == DataSource
+                    && x.ExternalId != null
+                    && playerExternalIds.Contains(x.ExternalId)
+                )
+                .ToListAsync(cancellationToken);
+
+            var existingClubs = await dbContext
+                .Clubs.Where(x =>
+                    x.DataSource == DataSource
+                    && x.ExternalId != null
+                    && clubExternalIds.Contains(x.ExternalId)
+                )
+                .ToListAsync(cancellationToken);
+
+            var existingPlayerIds = existingPlayers.Select(x => x.Id).ToList();
+
+            var recordedAt = DateTime.UtcNow.Date;
+
+            var existingMarketValues = await dbContext
+                .PlayerMarketValues.Where(x =>
+                    existingPlayerIds.Contains(x.PlayerId) && x.RecordedAt == recordedAt
+                )
+                .ToListAsync(cancellationToken);
+
+            var playersByExternalId = existingPlayers.ToDictionary(
+                x => x.ExternalId!,
+                StringComparer.Ordinal
+            );
+
+            var clubsByExternalId = existingClubs.ToDictionary(
+                x => x.ExternalId!,
+                StringComparer.Ordinal
+            );
+
+            var marketValuesByPlayerId = existingMarketValues.ToDictionary(x => x.PlayerId);
+
+            foreach (var source in players)
             {
-                await ImportPlayerAsync(item.Player, cancellationToken);
+                ImportPlayer(
+                    source,
+                    playersByExternalId,
+                    clubsByExternalId,
+                    marketValuesByPlayerId,
+                    recordedAt
+                );
             }
 
             await dbContext.SaveChangesAsync(cancellationToken);
+
+            Console.WriteLine($"Import kész: {players.Count} játékos feldolgozva.");
         }
 
-        private async Task ImportPlayerAsync(
+        private void ImportPlayer(
             SofaScorePlayer source,
-            CancellationToken cancellationToken
+            Dictionary<string, Player> playersByExternalId,
+            Dictionary<string, Club> clubsByExternalId,
+            Dictionary<int, PlayerMarketValue> marketValuesByPlayerId,
+            DateTime recordedAt
         )
         {
-            var club = await GetOrCreateClubAsync(source, cancellationToken);
-
-            var player = await dbContext.Players.FirstOrDefaultAsync(
-                x => x.ExternalId == source.SofaScoreId && x.DataSource == "SofaScore",
-                cancellationToken
-            );
-
-            if (player is null)
+            if (string.IsNullOrWhiteSpace(source.SofaScoreId))
             {
-                player = new Player
-                {
-                    Name = source.Name,
-                    Position = MapPosition(source.Position),
-                    Height = source.Height,
-                    DateOfBirth = source.DateOfBirth.HasValue
-                        ? DateOnly.FromDateTime(source.DateOfBirth.Value.DateTime)
-                        : null,
-                    PreferredFoot = MapPreferredFoot(source.PreferredFoot),
-                    Nationality = source.Country?.Name,
-                    ExternalId = source.SofaScoreId,
-                    DataSource = "SofaScore",
-                    Club = club,
-                };
-
-                dbContext.Players.Add(player);
-            }
-            else
-            {
-                player.Name = source.Name;
-                player.Position = MapPosition(source.Position);
-                player.Height = source.Height;
-                player.DateOfBirth = source.DateOfBirth.HasValue
-                    ? DateOnly.FromDateTime(source.DateOfBirth.Value.DateTime)
-                    : null;
-                player.PreferredFoot = MapPreferredFoot(source.PreferredFoot);
-                player.Nationality = source.Country?.Name;
-                player.Club = club;
+                throw new InvalidOperationException(
+                    $"A játékosnak nincs SofaScore azonosítója: {source.Name}"
+                );
             }
 
-            await UpsertMarketValueAsync(player, source, cancellationToken);
-        }
-
-        private async Task<Club> GetOrCreateClubAsync(
-            SofaScorePlayer source,
-            CancellationToken cancellationToken
-        )
-        {
             if (source.Team is null)
             {
                 throw new InvalidOperationException(
@@ -83,47 +108,65 @@ namespace NationalTeamManager.DataImporter.Importers
                 );
             }
 
-            var externalId = source.Team.Id.ToString();
+            var club = GetOrCreateClub(source, clubsByExternalId);
 
-            // Már ebben a DbContext-ben létrehozott klub keresése
-            var club = dbContext.Clubs.Local.FirstOrDefault(x =>
-                x.ExternalId == externalId && x.DataSource == "SofaScore"
-            );
-
-            if (club is not null)
+            if (!playersByExternalId.TryGetValue(source.SofaScoreId, out var player))
             {
+                player = new Player { ExternalId = source.SofaScoreId, DataSource = DataSource };
+
+                dbContext.Players.Add(player);
+
+                playersByExternalId.Add(source.SofaScoreId, player);
+            }
+
+            player.Name = source.Name;
+            player.Position = MapPosition(source.Position);
+            player.Height = source.Height;
+            player.DateOfBirth = source.DateOfBirth.HasValue
+                ? DateOnly.FromDateTime(source.DateOfBirth.Value.DateTime)
+                : null;
+            player.PreferredFoot = MapPreferredFoot(source.PreferredFoot);
+            player.Nationality = source.Country?.Name;
+            player.Club = club;
+
+            UpsertMarketValue(player, source, marketValuesByPlayerId, recordedAt);
+        }
+
+        private Club GetOrCreateClub(
+            SofaScorePlayer source,
+            Dictionary<string, Club> clubsByExternalId
+        )
+        {
+            var externalId = source.Team!.Id.ToString();
+
+            if (clubsByExternalId.TryGetValue(externalId, out var club))
+            {
+                club.Name = source.Team.Name;
+                club.Country = source.Team.Country?.Name;
+
                 return club;
             }
 
-            // Adatbázisban már létező klub keresése
-            club = await dbContext.Clubs.FirstOrDefaultAsync(
-                x => x.ExternalId == externalId && x.DataSource == "SofaScore",
-                cancellationToken
-            );
-
-            if (club is not null)
-            {
-                return club;
-            }
-
-            // Új klub
             club = new Club
             {
                 Name = source.Team.Name,
                 Country = source.Team.Country?.Name,
                 ExternalId = externalId,
-                DataSource = "SofaScore",
+                DataSource = DataSource,
             };
 
             dbContext.Clubs.Add(club);
 
+            clubsByExternalId.Add(externalId, club);
+
             return club;
         }
 
-        private async Task UpsertMarketValueAsync(
+        private void UpsertMarketValue(
             Player player,
             SofaScorePlayer source,
-            CancellationToken cancellationToken
+            Dictionary<int, PlayerMarketValue> marketValuesByPlayerId,
+            DateTime recordedAt
         )
         {
             if (source.ProposedMarketValueRaw?.Value is null)
@@ -131,31 +174,27 @@ namespace NationalTeamManager.DataImporter.Importers
                 return;
             }
 
-            var recordedAt = DateTime.UtcNow.Date;
+            if (
+                player.Id != 0
+                && marketValuesByPlayerId.TryGetValue(player.Id, out var existingMarketValue)
+            )
+            {
+                existingMarketValue.Value = source.ProposedMarketValueRaw.Value.Value;
 
-            var marketValue = await dbContext.PlayerMarketValues.FirstOrDefaultAsync(
-                x => x.Player == player && x.RecordedAt == recordedAt,
-                cancellationToken
+                existingMarketValue.Currency = source.ProposedMarketValueRaw.Currency ?? "EUR";
+
+                return;
+            }
+
+            dbContext.PlayerMarketValues.Add(
+                new PlayerMarketValue
+                {
+                    Player = player,
+                    Value = source.ProposedMarketValueRaw.Value.Value,
+                    Currency = source.ProposedMarketValueRaw.Currency ?? "EUR",
+                    RecordedAt = recordedAt,
+                }
             );
-
-            if (marketValue is null)
-            {
-                dbContext.PlayerMarketValues.Add(
-                    new PlayerMarketValue
-                    {
-                        Player = player,
-                        Value = source.ProposedMarketValueRaw.Value.Value,
-                        Currency = source.ProposedMarketValueRaw.Currency ?? "EUR",
-                        RecordedAt = recordedAt,
-                    }
-                );
-            }
-            else
-            {
-                marketValue.Value = source.ProposedMarketValueRaw.Value.Value;
-
-                marketValue.Currency = source.ProposedMarketValueRaw.Currency ?? "EUR";
-            }
         }
 
         private static PlayerPosition MapPosition(string? position)
