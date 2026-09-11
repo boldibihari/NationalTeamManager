@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NationalTeamManager.DataImporter.Configuration;
 using NationalTeamManager.DataImporter.Importers;
+using NationalTeamManager.DataImporter.Importers;
 using NationalTeamManager.DataImporter.Providers.SofaScore;
 using NationalTeamManager.Infrastructure.DependencyInjection;
 

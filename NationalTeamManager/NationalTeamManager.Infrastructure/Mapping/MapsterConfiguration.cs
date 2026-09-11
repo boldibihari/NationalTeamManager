@@ -1,5 +1,5 @@
 ﻿using Mapster;
-using NationalTeamManager.Application.Dtos.Player;
+using NationalTeamManager.Application.Players.Dtos;
 using NationalTeamManager.Domain.Entities;
 
 namespace NationalTeamManager.Infrastructure.Mapping

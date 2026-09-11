@@ -1,5 +1,5 @@
 ﻿using MapsterMapper;
-using NationalTeamManager.Application.Interfaces;
+using NationalTeamManager.Application.Common.Interfaces;
 using NationalTeamManager.Domain.Interfaces;
 
 namespace NationalTeamManager.Infrastructure.Services.Common

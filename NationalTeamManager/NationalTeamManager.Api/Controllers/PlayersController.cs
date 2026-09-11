@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using NationalTeamManager.Application.Dtos.Player;
-using NationalTeamManager.Application.Interfaces;
+using NationalTeamManager.Application.Common.Models;
+using NationalTeamManager.Application.Players;
+using NationalTeamManager.Application.Players.Dtos;
+using NationalTeamManager.Application.Players.Interfaces;
 
 namespace NationalTeamManager.Api.Controllers
 {
@@ -9,9 +11,12 @@ namespace NationalTeamManager.Api.Controllers
     public class PlayersController(IPlayerService playerService) : ControllerBase
     {
         [HttpGet]
-        public async Task<ActionResult<List<PlayerDto>>> GetAll(CancellationToken cancellationToken)
+        public async Task<ActionResult<PagedResult<PlayerDto>>> GetAll(
+            [FromQuery] PlayerQuery query,
+            CancellationToken cancellationToken
+        )
         {
-            var players = await playerService.GetAllAsync(cancellationToken);
+            var players = await playerService.SearchAsync(query, cancellationToken);
 
             return Ok(players);
         }

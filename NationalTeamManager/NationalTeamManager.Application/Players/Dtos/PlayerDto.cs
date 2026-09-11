@@ -1,6 +1,6 @@
-﻿using NationalTeamManager.Application.Interfaces;
+﻿using NationalTeamManager.Application.Common.Interfaces;
 
-namespace NationalTeamManager.Application.Dtos.Player
+namespace NationalTeamManager.Application.Players.Dtos
 {
     public record PlayerDto(
         int Id,

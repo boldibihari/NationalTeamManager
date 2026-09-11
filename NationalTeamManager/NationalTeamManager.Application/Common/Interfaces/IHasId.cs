@@ -1,4 +1,4 @@
-﻿namespace NationalTeamManager.Application.Interfaces
+﻿namespace NationalTeamManager.Application.Common.Interfaces
 {
     public interface IHasId
     {

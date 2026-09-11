@@ -1,6 +1,6 @@
 ﻿using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
-using NationalTeamManager.Application.Interfaces;
+using NationalTeamManager.Application.Common.Interfaces;
 using NationalTeamManager.Domain.Interfaces;
 
 namespace NationalTeamManager.Infrastructure.Persistence.Repositories
@@ -11,10 +11,7 @@ namespace NationalTeamManager.Infrastructure.Persistence.Repositories
     {
         private readonly DbSet<TEntity> dbSet = dbContext.Set<TEntity>();
 
-        public async Task<List<TEntity>> GetAllAsync(
-            CancellationToken cancellationToken = default,
-            params Expression<Func<TEntity, object>>[] includes
-        )
+        public IQueryable<TEntity> Query(params Expression<Func<TEntity, object>>[] includes)
         {
             IQueryable<TEntity> query = dbSet.AsNoTracking();
 
@@ -23,7 +20,15 @@ namespace NationalTeamManager.Infrastructure.Persistence.Repositories
                 query = query.Include(include);
             }
 
-            return await query.ToListAsync(cancellationToken);
+            return query;
+        }
+
+        public async Task<List<TEntity>> GetAllAsync(
+            CancellationToken cancellationToken = default,
+            params Expression<Func<TEntity, object>>[] includes
+        )
+        {
+            return await Query(includes).ToListAsync(cancellationToken);
         }
 
         public async Task<TEntity?> GetByIdAsync(
@@ -32,14 +37,7 @@ namespace NationalTeamManager.Infrastructure.Persistence.Repositories
             params Expression<Func<TEntity, object>>[] includes
         )
         {
-            IQueryable<TEntity> query = dbSet.AsNoTracking();
-
-            foreach (var include in includes)
-            {
-                query = query.Include(include);
-            }
-
-            return await query.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+            return await Query(includes).FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
         }
 
         public async Task CreateAsync(TEntity entity, CancellationToken cancellationToken = default)

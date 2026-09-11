@@ -1,6 +1,6 @@
 ﻿using NationalTeamManager.Domain.Enums;
 
-namespace NationalTeamManager.Application.Dtos.Player
+namespace NationalTeamManager.Application.Players.Dtos
 {
     public record UpdatePlayerDto(
         string Name,
