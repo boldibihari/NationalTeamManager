@@ -1,12 +1,20 @@
+using FluentValidation;
+using NationalTeamManager.Api.Validation;
+using NationalTeamManager.Application.Validators.Player;
 using NationalTeamManager.Infrastructure.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add<ValidationFilter>();
+});
 
 builder.Services.AddOpenApi();
 
 builder.Services.AddInfrastructure(builder.Configuration);
+
+builder.Services.AddValidatorsFromAssemblyContaining<CreatePlayerDtoValidator>();
 
 var app = builder.Build();
 
