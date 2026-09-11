@@ -1,4 +1,5 @@
 using FluentValidation;
+using NationalTeamManager.Api.ExceptionHandling;
 using NationalTeamManager.Api.Validation;
 using NationalTeamManager.Application.Validators.Player;
 using NationalTeamManager.Infrastructure.DependencyInjection;
@@ -12,11 +13,16 @@ builder.Services.AddControllers(options =>
 
 builder.Services.AddOpenApi();
 
-builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 builder.Services.AddValidatorsFromAssemblyContaining<CreatePlayerDtoValidator>();
 
+builder.Services.AddInfrastructure(builder.Configuration);
+
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 app.UseDefaultFiles();
 app.MapStaticAssets();
