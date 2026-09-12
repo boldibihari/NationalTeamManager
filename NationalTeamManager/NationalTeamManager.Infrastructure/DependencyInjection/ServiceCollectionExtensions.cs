@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NationalTeamManager.Application.Common.Interfaces;
 using NationalTeamManager.Application.Players.Interfaces;
+using NationalTeamManager.Application.Team.Interfaces;
 using NationalTeamManager.Infrastructure.Mapping;
 using NationalTeamManager.Infrastructure.Persistence;
 using NationalTeamManager.Infrastructure.Persistence.Repositories;
@@ -31,6 +32,7 @@ namespace NationalTeamManager.Infrastructure.DependencyInjection
             services.AddScoped<IMapper, ServiceMapper>();
 
             services.AddScoped<IPlayerService, PlayerService>();
+            services.AddScoped<ITeamService, TeamService>();
 
             return services;
         }

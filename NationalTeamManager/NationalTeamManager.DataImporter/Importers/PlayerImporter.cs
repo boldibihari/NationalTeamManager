@@ -235,7 +235,7 @@ namespace NationalTeamManager.DataImporter.Importers
 
                 team.Name = source.Team.Name;
                 team.Country = source.Team.Country?.Name;
-                team.IsNationalTeam = source.Team.Country is not null;
+                team.IsNationalTeam = false;
 
                 return (team, hasChanges ? ImportResult.Updated : ImportResult.Unchanged);
             }
@@ -244,7 +244,7 @@ namespace NationalTeamManager.DataImporter.Importers
             {
                 Name = source.Team.Name,
                 Country = source.Team.Country?.Name,
-                IsNationalTeam = source.Team.Country is not null,
+                IsNationalTeam = false,
                 ExternalId = externalId,
                 DataSource = DataSource,
             };

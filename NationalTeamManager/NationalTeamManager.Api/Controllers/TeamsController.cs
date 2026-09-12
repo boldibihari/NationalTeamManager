@@ -1,55 +1,55 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using NationalTeamManager.Application.Common.Models;
-using NationalTeamManager.Application.Players;
-using NationalTeamManager.Application.Players.Dtos;
-using NationalTeamManager.Application.Players.Interfaces;
+using NationalTeamManager.Application.Team;
+using NationalTeamManager.Application.Team.Dtos;
+using NationalTeamManager.Application.Team.Interfaces;
 
 namespace NationalTeamManager.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class PlayersController(IPlayerService playerService) : ControllerBase
+    public class TeamsController(ITeamService teamService) : ControllerBase
     {
         [HttpGet]
-        [ProducesResponseType(typeof(PagedResult<PlayerDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PagedResult<TeamDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<PagedResult<PlayerDto>>> GetAll(
-            [FromQuery] PlayerQuery query,
+        public async Task<ActionResult<PagedResult<TeamDto>>> GetAll(
+            [FromQuery] TeamQuery query,
             CancellationToken cancellationToken
         )
         {
-            var players = await playerService.SearchAsync(query, cancellationToken);
+            var teams = await teamService.SearchAsync(query, cancellationToken);
 
-            return Ok(players);
+            return Ok(teams);
         }
 
         [HttpGet("{id:int}")]
-        [ProducesResponseType(typeof(PlayerDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(TeamDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<PlayerDto>> GetById(
+        public async Task<ActionResult<TeamDto>> GetById(
             int id,
             CancellationToken cancellationToken
         )
         {
-            var player = await playerService.GetByIdAsync(id, cancellationToken);
+            var team = await teamService.GetByIdAsync(id, cancellationToken);
 
-            if (player is null)
+            if (team is null)
                 return NotFound();
 
-            return Ok(player);
+            return Ok(team);
         }
 
         [HttpPost]
-        [ProducesResponseType(typeof(PlayerDto), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(TeamDto), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<PlayerDto>> Create(
-            CreatePlayerDto dto,
+        public async Task<ActionResult<TeamDto>> Create(
+            CreateTeamDto dto,
             CancellationToken cancellationToken
         )
         {
-            var player = await playerService.AddAsync(dto, cancellationToken);
+            var team = await teamService.AddAsync(dto, cancellationToken);
 
-            return CreatedAtAction(nameof(GetById), new { id = player.Id }, player);
+            return CreatedAtAction(nameof(GetById), new { id = team.Id }, team);
         }
 
         [HttpPut("{id:int}")]
@@ -58,11 +58,11 @@ namespace NationalTeamManager.Api.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Update(
             int id,
-            UpdatePlayerDto dto,
+            UpdateTeamDto dto,
             CancellationToken cancellationToken
         )
         {
-            var updated = await playerService.UpdateAsync(id, dto, cancellationToken);
+            var updated = await teamService.UpdateAsync(id, dto, cancellationToken);
 
             if (!updated)
                 return NotFound();
@@ -75,7 +75,7 @@ namespace NationalTeamManager.Api.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
         {
-            var deleted = await playerService.DeleteAsync(id, cancellationToken);
+            var deleted = await teamService.DeleteAsync(id, cancellationToken);
 
             if (!deleted)
                 return NotFound();

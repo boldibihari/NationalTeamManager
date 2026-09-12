@@ -1,7 +1,7 @@
 using FluentValidation;
 using NationalTeamManager.Api.ExceptionHandling;
 using NationalTeamManager.Api.Validation;
-using NationalTeamManager.Application.Validators.Player;
+using NationalTeamManager.Application.Common;
 using NationalTeamManager.Infrastructure.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,7 +16,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
-builder.Services.AddValidatorsFromAssemblyContaining<CreatePlayerDtoValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<ApplicationAssemblyMarker>();
 
 builder.Services.AddInfrastructure(builder.Configuration);
 
