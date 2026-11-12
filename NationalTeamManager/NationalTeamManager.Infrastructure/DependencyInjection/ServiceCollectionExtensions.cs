@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NationalTeamManager.Application.Common.Interfaces;
+using NationalTeamManager.Application.Match.Interfaces;
 using NationalTeamManager.Application.Players.Interfaces;
 using NationalTeamManager.Application.Team.Interfaces;
 using NationalTeamManager.Infrastructure.Mapping;
@@ -33,6 +34,7 @@ namespace NationalTeamManager.Infrastructure.DependencyInjection
 
             services.AddScoped<IPlayerService, PlayerService>();
             services.AddScoped<ITeamService, TeamService>();
+            services.AddScoped<IMatchService, MatchService>();
 
             return services;
         }
