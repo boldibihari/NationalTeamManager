@@ -167,6 +167,10 @@ namespace NationalTeamManager.Infrastructure.Migrations
                     b.Property<int>("HomeTeamId")
                         .HasColumnType("int");
 
+                    b.Property<string>("StatusType")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.Property<string>("Venue")
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
@@ -186,6 +190,114 @@ namespace NationalTeamManager.Infrastructure.Migrations
                         .HasFilter("[ExternalId] IS NOT NULL AND [DataSource] IS NOT NULL");
 
                     b.ToTable("Matches");
+                });
+
+            modelBuilder.Entity("NationalTeamManager.Domain.Entities.MatchIncident", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("AddedTime")
+                        .HasColumnType("int");
+
+                    b.Property<string>("AssistPlayerExternalId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("AssistPlayerName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<int?>("AwayScore")
+                        .HasColumnType("int");
+
+                    b.Property<string>("DataSource")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("ExternalId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ExternalKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int?>("HomeScore")
+                        .HasColumnType("int");
+
+                    b.Property<string>("IncidentClass")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("IncidentType")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool?>("IsHome")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("MatchId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PlayerExternalId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("PlayerInExternalId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("PlayerInName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("PlayerName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("PlayerOutExternalId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("PlayerOutName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool?>("Rescinded")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("ReversedPeriodTime")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Text")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int?>("Time")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MatchId");
+
+                    b.HasIndex("DataSource", "ExternalKey")
+                        .IsUnique()
+                        .HasFilter("[DataSource] IS NOT NULL");
+
+                    b.ToTable("MatchIncidents");
                 });
 
             modelBuilder.Entity("NationalTeamManager.Domain.Entities.Player", b =>
@@ -363,6 +475,17 @@ namespace NationalTeamManager.Infrastructure.Migrations
                     b.Navigation("HomeTeam");
                 });
 
+            modelBuilder.Entity("NationalTeamManager.Domain.Entities.MatchIncident", b =>
+                {
+                    b.HasOne("NationalTeamManager.Domain.Entities.Match", "Match")
+                        .WithMany("Incidents")
+                        .HasForeignKey("MatchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Match");
+                });
+
             modelBuilder.Entity("NationalTeamManager.Domain.Entities.Player", b =>
                 {
                     b.HasOne("NationalTeamManager.Domain.Entities.Team", "Team")
@@ -399,6 +522,11 @@ namespace NationalTeamManager.Infrastructure.Migrations
             modelBuilder.Entity("NationalTeamManager.Domain.Entities.CompetitionStage", b =>
                 {
                     b.Navigation("Matches");
+                });
+
+            modelBuilder.Entity("NationalTeamManager.Domain.Entities.Match", b =>
+                {
+                    b.Navigation("Incidents");
                 });
 
             modelBuilder.Entity("NationalTeamManager.Domain.Entities.Player", b =>

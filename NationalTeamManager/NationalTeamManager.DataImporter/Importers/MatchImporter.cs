@@ -276,6 +276,7 @@ namespace NationalTeamManager.DataImporter.Importers
                 {
                     ExternalId = externalId,
                     DataSource = DataSource,
+                    StatusType = source.Status?.Type,
                     Date = date,
                     HomeTeam = homeTeam,
                     AwayTeam = awayTeam,
@@ -299,7 +300,8 @@ namespace NationalTeamManager.DataImporter.Importers
                 || match.HomeScore != homeScore
                 || match.AwayScore != awayScore
                 || match.CompetitionEditionId != edition.Id
-                || match.CompetitionStageId != stage?.Id;
+                || match.CompetitionStageId != stage?.Id
+                || match.StatusType != source.Status?.Type;
 
             match.Date = date;
             match.HomeTeam = homeTeam;
@@ -308,6 +310,7 @@ namespace NationalTeamManager.DataImporter.Importers
             match.AwayScore = awayScore;
             match.CompetitionEdition = edition;
             match.CompetitionStage = stage;
+            match.StatusType = source.Status?.Type;
 
             return hasChanges ? ImportResult.Updated : ImportResult.Unchanged;
         }

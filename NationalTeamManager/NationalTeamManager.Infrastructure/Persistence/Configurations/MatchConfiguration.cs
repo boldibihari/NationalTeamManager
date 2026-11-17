@@ -18,6 +18,8 @@ namespace NationalTeamManager.Infrastructure.Persistence.Configurations
 
             builder.Property(x => x.DataSource).HasMaxLength(50);
 
+            builder.Property(x => x.StatusType).HasMaxLength(50);
+
             builder
                 .HasOne(x => x.HomeTeam)
                 .WithMany(x => x.HomeMatches)

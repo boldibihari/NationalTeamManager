@@ -19,5 +19,7 @@ namespace NationalTeamManager.Domain.Entities
         public CompetitionStage? CompetitionStage { get; set; }
         public string? ExternalId { get; set; }
         public string? DataSource { get; set; }
+        public string? StatusType { get; set; }
+        public ICollection<MatchIncident> Incidents { get; set; } = [];
     }
 }

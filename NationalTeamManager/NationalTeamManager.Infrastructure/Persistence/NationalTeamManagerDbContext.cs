@@ -19,6 +19,8 @@ namespace NationalTeamManager.Infrastructure.Persistence
 
         public DbSet<Match> Matches => Set<Match>();
 
+        public DbSet<MatchIncident> MatchIncidents => Set<MatchIncident>();
+
         public DbSet<PlayerMarketValue> PlayerMarketValues => Set<PlayerMarketValue>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

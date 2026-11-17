@@ -31,6 +31,7 @@ builder.Services.AddHttpClient(
 builder.Services.AddScoped<ISofaScoreClient, SofaScoreClient>();
 builder.Services.AddScoped<PlayerImporter>();
 builder.Services.AddScoped<MatchImporter>();
+builder.Services.AddScoped<MatchIncidentImporter>();
 
 builder.Services.AddInfrastructure(builder.Configuration);
 
@@ -45,5 +46,9 @@ await importer.ImportAsync(4709);
 var matchImporter = scope.ServiceProvider.GetRequiredService<MatchImporter>();
 
 await matchImporter.ImportAsync(4709);
+
+var matchIncidentImporter = scope.ServiceProvider.GetRequiredService<MatchIncidentImporter>();
+
+await matchIncidentImporter.ImportAsync();
 
 Console.WriteLine("Import sikeresen lefutott.");
