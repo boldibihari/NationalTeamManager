@@ -16,6 +16,7 @@ namespace NationalTeamManager.DataImporter.Providers.SofaScore.Models
         [JsonPropertyName("status")]
         public SofaScoreEventStatus? Status { get; set; }
 
+
         [JsonPropertyName("homeTeam")]
         public SofaScoreMatchTeam HomeTeam { get; set; } = null!;
 

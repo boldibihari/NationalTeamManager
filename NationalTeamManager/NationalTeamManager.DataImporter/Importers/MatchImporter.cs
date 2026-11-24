@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using NationalTeamManager.DataImporter.Models;
 using NationalTeamManager.DataImporter.Providers.SofaScore;
 using NationalTeamManager.DataImporter.Providers.SofaScore.Models;
@@ -133,6 +133,7 @@ namespace NationalTeamManager.DataImporter.Importers
 
             foreach (var source in matches)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var result = ImportMatch(
                     source,
                     teamsByExternalId,
@@ -293,15 +294,26 @@ namespace NationalTeamManager.DataImporter.Importers
                 return ImportResult.Created;
             }
 
+            homeScore ??= match.HomeScore;
+            awayScore ??= match.AwayScore;
+            var statusType = string.IsNullOrWhiteSpace(source.Status?.Type)
+                ? match.StatusType
+                : source.Status.Type;
+            var detailsChanged =
+                match.HomeScore != homeScore
+                || match.AwayScore != awayScore
+                || !string.Equals(match.StatusType, statusType, StringComparison.OrdinalIgnoreCase);
+            if (detailsChanged)
+                match.DetailsImportedAt = null;
+
             var hasChanges =
                 match.Date != date
                 || match.HomeTeamId != homeTeam.Id
                 || match.AwayTeamId != awayTeam.Id
-                || match.HomeScore != homeScore
-                || match.AwayScore != awayScore
+                || detailsChanged
                 || match.CompetitionEditionId != edition.Id
                 || match.CompetitionStageId != stage?.Id
-                || match.StatusType != source.Status?.Type;
+                || match.StatusType != statusType;
 
             match.Date = date;
             match.HomeTeam = homeTeam;
@@ -310,7 +322,7 @@ namespace NationalTeamManager.DataImporter.Importers
             match.AwayScore = awayScore;
             match.CompetitionEdition = edition;
             match.CompetitionStage = stage;
-            match.StatusType = source.Status?.Type;
+            match.StatusType = statusType;
 
             return hasChanges ? ImportResult.Updated : ImportResult.Unchanged;
         }

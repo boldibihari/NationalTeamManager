@@ -12,13 +12,21 @@ namespace NationalTeamManager.Infrastructure.Persistence.Configurations
 
             builder.Property(x => x.Date).IsRequired();
 
-            builder.Property(x => x.Venue).HasMaxLength(200);
-
             builder.Property(x => x.ExternalId).HasMaxLength(100);
 
             builder.Property(x => x.DataSource).HasMaxLength(50);
 
+            builder.Property(x => x.CustomId).HasMaxLength(100);
+
+            builder.Property(x => x.Slug).HasMaxLength(200);
+
+            builder.Property(x => x.DetailsImportedAt);
+
             builder.Property(x => x.StatusType).HasMaxLength(50);
+
+            builder.Property(x => x.StatusDescription).HasMaxLength(100);
+
+            builder.Property(x => x.TournamentGroupName).HasMaxLength(150);
 
             builder
                 .HasOne(x => x.HomeTeam)
@@ -42,6 +50,18 @@ namespace NationalTeamManager.Infrastructure.Persistence.Configurations
                 .HasOne(x => x.CompetitionStage)
                 .WithMany(x => x.Matches)
                 .HasForeignKey(x => x.CompetitionStageId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            builder
+                .HasOne(x => x.Venue)
+                .WithMany(x => x.Matches)
+                .HasForeignKey(x => x.VenueId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            builder
+                .HasOne(x => x.Referee)
+                .WithMany(x => x.Matches)
+                .HasForeignKey(x => x.RefereeId)
                 .OnDelete(DeleteBehavior.SetNull);
 
             builder.HasIndex(x => new { x.ExternalId, x.DataSource }).IsUnique();

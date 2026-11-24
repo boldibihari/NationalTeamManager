@@ -15,6 +15,12 @@ namespace NationalTeamManager.DataImporter.Providers.SofaScore.Models
 
         [JsonPropertyName("id")]
         public int Id { get; set; }
+
+        [JsonPropertyName("groupName")]
+        public string? GroupName { get; set; }
+
+        [JsonPropertyName("isGroup")]
+        public bool? IsGroup { get; set; }
     }
 
     public class SofaScoreUniqueTournament

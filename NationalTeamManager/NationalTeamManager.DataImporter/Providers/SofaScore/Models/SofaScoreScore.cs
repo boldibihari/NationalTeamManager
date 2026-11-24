@@ -18,5 +18,17 @@ namespace NationalTeamManager.DataImporter.Providers.SofaScore.Models
 
         [JsonPropertyName("period2")]
         public int? Period2 { get; set; }
+
+        [JsonPropertyName("extra1")]
+        public int? Extra1 { get; set; }
+
+        [JsonPropertyName("extra2")]
+        public int? Extra2 { get; set; }
+
+        [JsonPropertyName("overtime")]
+        public int? Overtime { get; set; }
+
+        [JsonPropertyName("penalties")]
+        public int? Penalties { get; set; }
     }
 }

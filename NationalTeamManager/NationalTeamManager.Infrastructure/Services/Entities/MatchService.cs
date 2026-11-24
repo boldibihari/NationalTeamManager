@@ -20,7 +20,8 @@ namespace NationalTeamManager.Infrastructure.Services.Entities
                 x => x.HomeTeam,
                 x => x.AwayTeam,
                 x => x.CompetitionEdition,
-                x => x.CompetitionStage!
+                x => x.CompetitionStage!,
+                x => x.Venue!
             );
 
             if (query.From.HasValue)
@@ -84,7 +85,8 @@ namespace NationalTeamManager.Infrastructure.Services.Entities
                 x => x.HomeTeam,
                 x => x.AwayTeam,
                 x => x.CompetitionEdition,
-                x => x.CompetitionStage!
+                x => x.CompetitionStage!,
+                x => x.Venue!
             );
 
             return match is null ? null : mapper.Map<MatchDto>(match);

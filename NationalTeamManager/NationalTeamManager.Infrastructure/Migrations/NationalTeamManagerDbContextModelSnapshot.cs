@@ -141,6 +141,24 @@ namespace NationalTeamManager.Infrastructure.Migrations
                     b.Property<int?>("AwayScore")
                         .HasColumnType("int");
 
+                    b.Property<int?>("AwayScoreDisplay")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("AwayScoreNormalTime")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("AwayScoreOvertime")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("AwayScorePenalties")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("AwayScorePeriod1")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("AwayScorePeriod2")
+                        .HasColumnType("int");
+
                     b.Property<int>("AwayTeamId")
                         .HasColumnType("int");
 
@@ -150,11 +168,18 @@ namespace NationalTeamManager.Infrastructure.Migrations
                     b.Property<int?>("CompetitionStageId")
                         .HasColumnType("int");
 
+                    b.Property<string>("CustomId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<string>("DataSource")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<DateTime>("Date")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DetailsImportedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("ExternalId")
@@ -164,16 +189,78 @@ namespace NationalTeamManager.Infrastructure.Migrations
                     b.Property<int?>("HomeScore")
                         .HasColumnType("int");
 
+                    b.Property<int?>("HomeScoreDisplay")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("HomeScoreNormalTime")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("HomeScoreOvertime")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("HomeScorePenalties")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("HomeScorePeriod1")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("HomeScorePeriod2")
+                        .HasColumnType("int");
+
                     b.Property<int>("HomeTeamId")
                         .HasColumnType("int");
+
+                    b.Property<int?>("RefereeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Slug")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int?>("StatusCode")
+                        .HasColumnType("int");
+
+                    b.Property<string>("StatusDescription")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("StatusType")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<string>("Venue")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                    b.Property<long?>("TimeCurrentPeriodStartTimestamp")
+                        .HasColumnType("bigint");
+
+                    b.Property<int?>("TimeInjuryTime1")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("TimeInjuryTime2")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("TimeInjuryTime3")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("TimeInjuryTime4")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("TimeOvertimeLength")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("TimePeriodLength")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("TimeTotalPeriodCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TournamentGroupName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<int?>("VenueId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("WinnerCode")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -184,6 +271,10 @@ namespace NationalTeamManager.Infrastructure.Migrations
                     b.HasIndex("CompetitionStageId");
 
                     b.HasIndex("HomeTeamId");
+
+                    b.HasIndex("RefereeId");
+
+                    b.HasIndex("VenueId");
 
                     b.HasIndex("ExternalId", "DataSource")
                         .IsUnique()
@@ -382,6 +473,40 @@ namespace NationalTeamManager.Infrastructure.Migrations
                     b.ToTable("PlayerMarketValues");
                 });
 
+            modelBuilder.Entity("NationalTeamManager.Domain.Entities.Referee", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Country")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("DataSource")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ExternalId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExternalId", "DataSource")
+                        .IsUnique()
+                        .HasFilter("[ExternalId] IS NOT NULL AND [DataSource] IS NOT NULL");
+
+                    b.ToTable("Referees");
+                });
+
             modelBuilder.Entity("NationalTeamManager.Domain.Entities.Team", b =>
                 {
                     b.Property<int>("Id")
@@ -417,6 +542,59 @@ namespace NationalTeamManager.Infrastructure.Migrations
                         .HasFilter("[ExternalId] IS NOT NULL AND [DataSource] IS NOT NULL");
 
                     b.ToTable("Teams");
+                });
+
+            modelBuilder.Entity("NationalTeamManager.Domain.Entities.Venue", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("Capacity")
+                        .HasColumnType("int");
+
+                    b.Property<string>("City")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("Country")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("DataSource")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ExternalId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal?>("Latitude")
+                        .HasPrecision(9, 6)
+                        .HasColumnType("decimal(9,6)");
+
+                    b.Property<decimal?>("Longitude")
+                        .HasPrecision(9, 6)
+                        .HasColumnType("decimal(9,6)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Surface")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExternalId", "DataSource")
+                        .IsUnique()
+                        .HasFilter("[ExternalId] IS NOT NULL AND [DataSource] IS NOT NULL");
+
+                    b.ToTable("Venues");
                 });
 
             modelBuilder.Entity("NationalTeamManager.Domain.Entities.CompetitionEdition", b =>
@@ -466,6 +644,16 @@ namespace NationalTeamManager.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("NationalTeamManager.Domain.Entities.Referee", "Referee")
+                        .WithMany("Matches")
+                        .HasForeignKey("RefereeId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("NationalTeamManager.Domain.Entities.Venue", "Venue")
+                        .WithMany("Matches")
+                        .HasForeignKey("VenueId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("AwayTeam");
 
                     b.Navigation("CompetitionEdition");
@@ -473,6 +661,10 @@ namespace NationalTeamManager.Infrastructure.Migrations
                     b.Navigation("CompetitionStage");
 
                     b.Navigation("HomeTeam");
+
+                    b.Navigation("Referee");
+
+                    b.Navigation("Venue");
                 });
 
             modelBuilder.Entity("NationalTeamManager.Domain.Entities.MatchIncident", b =>
@@ -534,6 +726,11 @@ namespace NationalTeamManager.Infrastructure.Migrations
                     b.Navigation("MarketValues");
                 });
 
+            modelBuilder.Entity("NationalTeamManager.Domain.Entities.Referee", b =>
+                {
+                    b.Navigation("Matches");
+                });
+
             modelBuilder.Entity("NationalTeamManager.Domain.Entities.Team", b =>
                 {
                     b.Navigation("AwayMatches");
@@ -541,6 +738,11 @@ namespace NationalTeamManager.Infrastructure.Migrations
                     b.Navigation("HomeMatches");
 
                     b.Navigation("Players");
+                });
+
+            modelBuilder.Entity("NationalTeamManager.Domain.Entities.Venue", b =>
+                {
+                    b.Navigation("Matches");
                 });
 #pragma warning restore 612, 618
         }

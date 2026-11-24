@@ -88,5 +88,25 @@ namespace NationalTeamManager.DataImporter.Providers.SofaScore
             return incidents
                 ?? throw new InvalidOperationException("A SofaScore API üres választ adott.");
         }
+
+        public async Task<SofaScoreMatchDetailResponse> GetMatchDetailsAsync(
+            int matchId,
+            CancellationToken cancellationToken = default
+        )
+        {
+            var client = httpClientFactory.CreateClient("SofaScore");
+            var response = await client.GetAsync(
+                $"matches/detail?matchId={matchId}",
+                cancellationToken
+            );
+            response.EnsureSuccessStatusCode();
+
+            var details = await response.Content.ReadFromJsonAsync<SofaScoreMatchDetailResponse>(
+                cancellationToken
+            );
+
+            return details
+                ?? throw new InvalidOperationException("A SofaScore API üres választ adott.");
+        }
     }
 }

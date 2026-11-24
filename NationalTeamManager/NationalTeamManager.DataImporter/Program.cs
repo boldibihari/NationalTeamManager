@@ -1,10 +1,12 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NationalTeamManager.DataImporter.Configuration;
 using NationalTeamManager.DataImporter.Importers;
 using NationalTeamManager.DataImporter.Providers.SofaScore;
 using NationalTeamManager.Infrastructure.DependencyInjection;
+using NationalTeamManager.Infrastructure.Persistence;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -31,24 +33,46 @@ builder.Services.AddHttpClient(
 builder.Services.AddScoped<ISofaScoreClient, SofaScoreClient>();
 builder.Services.AddScoped<PlayerImporter>();
 builder.Services.AddScoped<MatchImporter>();
+builder.Services.AddScoped<MatchDetailsImporter>();
 builder.Services.AddScoped<MatchIncidentImporter>();
 
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddDbContextFactory<NationalTeamManagerDbContext>(
+    lifetime: ServiceLifetime.Scoped
+);
 
 using var host = builder.Build();
 
-await using var scope = host.Services.CreateAsyncScope();
+await host.StartAsync();
+var stoppingToken = host
+    .Services.GetRequiredService<IHostApplicationLifetime>()
+    .ApplicationStopping;
+try
+{
+    await using var scope = host.Services.CreateAsyncScope();
+    var matchImporter = scope.ServiceProvider.GetRequiredService<MatchImporter>();
+    await matchImporter.ImportAsync(4709, stoppingToken);
 
-var importer = scope.ServiceProvider.GetRequiredService<PlayerImporter>();
+    var matchDetailsImporter = scope.ServiceProvider.GetRequiredService<MatchDetailsImporter>();
+    var statistics = await matchDetailsImporter.ImportAsync(stoppingToken);
 
-await importer.ImportAsync(4709);
+    if (statistics.Matches.Failed > 0)
+    {
+        Console.Error.WriteLine(
+            $"Az import részben vagy egészben sikertelen. Hibás mérkőzések: {statistics.Matches.Failed}."
+        );
+        return 1;
+    }
 
-var matchImporter = scope.ServiceProvider.GetRequiredService<MatchImporter>();
-
-await matchImporter.ImportAsync(4709);
-
-var matchIncidentImporter = scope.ServiceProvider.GetRequiredService<MatchIncidentImporter>();
-
-await matchIncidentImporter.ImportAsync();
-
-Console.WriteLine("Import sikeresen lefutott.");
+    Console.WriteLine("Import sikeresen lefutott.");
+    return 0;
+}
+catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+{
+    Console.Error.WriteLine("Az import megszakítva.");
+    return 130;
+}
+finally
+{
+    await host.StopAsync();
+}

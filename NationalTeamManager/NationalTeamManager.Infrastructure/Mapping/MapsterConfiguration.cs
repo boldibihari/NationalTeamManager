@@ -1,4 +1,5 @@
 ﻿using Mapster;
+using NationalTeamManager.Application.Match.Dtos;
 using NationalTeamManager.Application.Players.Dtos;
 using NationalTeamManager.Domain.Entities;
 
@@ -31,6 +32,10 @@ namespace NationalTeamManager.Infrastructure.Mapping
             TypeAdapterConfig<CreatePlayerDto, Player>.NewConfig();
 
             TypeAdapterConfig<UpdatePlayerDto, Player>.NewConfig();
+
+            TypeAdapterConfig<Match, MatchDto>
+                .NewConfig()
+                .Map(dest => dest.Venue, src => src.Venue == null ? null : src.Venue.Name);
         }
     }
 }

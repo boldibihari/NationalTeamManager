@@ -8,6 +8,10 @@
 
         public int Unchanged { get; private set; }
 
+        public int Skipped { get; private set; }
+
+        public int Failed { get; private set; }
+
         public void Add(ImportResult result)
         {
             switch (result)
@@ -22,6 +26,14 @@
 
                 case ImportResult.Unchanged:
                     Unchanged++;
+                    break;
+
+                case ImportResult.Skipped:
+                    Skipped++;
+                    break;
+
+                case ImportResult.Failed:
+                    Failed++;
                     break;
             }
         }

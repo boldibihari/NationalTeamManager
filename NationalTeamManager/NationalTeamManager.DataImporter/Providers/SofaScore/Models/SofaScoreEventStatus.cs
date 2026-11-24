@@ -5,7 +5,7 @@ namespace NationalTeamManager.DataImporter.Providers.SofaScore.Models
     public class SofaScoreEventStatus
     {
         [JsonPropertyName("code")]
-        public int Code { get; set; }
+        public int? Code { get; set; }
 
         [JsonPropertyName("description")]
         public string? Description { get; set; }

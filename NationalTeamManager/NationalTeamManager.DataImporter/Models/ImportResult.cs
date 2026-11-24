@@ -5,5 +5,7 @@
         Created,
         Updated,
         Unchanged,
+        Skipped,
+        Failed,
     }
 }

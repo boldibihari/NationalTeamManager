@@ -23,5 +23,10 @@ namespace NationalTeamManager.DataImporter.Providers.SofaScore
             int matchId,
             CancellationToken cancellationToken = default
         );
+
+        Task<SofaScoreMatchDetailResponse> GetMatchDetailsAsync(
+            int matchId,
+            CancellationToken cancellationToken = default
+        );
     }
 }
